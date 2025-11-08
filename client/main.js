@@ -11,7 +11,13 @@ let pathSegmentBuffer = [];
 const BATCH_INTERVAL = 100;
 let batchTimer = null;
 
-colorInput.addEventListener('input', (e) => window.canvasAPI.setColor(e.target.value));
+colorInput.addEventListener('input', (e) => {
+  window.canvasAPI.setColor(e.target.value);
+});
+
+colorInput.addEventListener('change', (e) => {
+  window.canvasAPI.setColor(e.target.value);
+});
 
 const sizeValueEl = document.getElementById('size-value');
 sizeInput.addEventListener('input', (e) => {
