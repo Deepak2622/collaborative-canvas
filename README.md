@@ -160,9 +160,7 @@ collaborative-canvas/
 
 **Total Estimated Time: ~16 hours**
 
-## Deployment
 
-See `DEPLOYMENT.md` for Heroku deployment instructions.
 
 
 
