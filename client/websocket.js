@@ -5,6 +5,7 @@ const SERVER_URL = 'https://collaborative-canvas-l6f7.onrender.com';
 const socket = io(SERVER_URL, {
   query: { room },
   reconnection: true,
+    transports: ['websocket', 'polling'],
   reconnectionDelay: 1000,
   reconnectionDelayMax: 5000,
   reconnectionAttempts: Infinity,
