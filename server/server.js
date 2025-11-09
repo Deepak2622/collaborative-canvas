@@ -76,7 +76,7 @@ io.on('connection', (socket) => {
     try {
       const undone = room.state.undo();
       if (undone) {
-        io.to(queryRoom).emit('full_state', room.state.getActions());
+        io.to(queryRoom).emit('action_undone', { opId: undone.opId });
       }
     } catch (error) {
       console.error('Error handling undo:', error);
@@ -88,7 +88,7 @@ io.on('connection', (socket) => {
     try {
       const redone = room.state.redo();
       if (redone) {
-        io.to(queryRoom).emit('full_state', room.state.getActions());
+        io.to(queryRoom).emit('action_redone', { opId: redone.opId, action: redone });
       }
     } catch (error) {
       console.error('Error handling redo:', error);

@@ -20,6 +20,10 @@ class DrawingState {
     return this.actions.filter(a => !a.undone);
   }
 
+  getActionByOpId(opId) {
+    return this.actions.find(a => a.opId === opId);
+  }
+
   undo() {
     for (let i = this.actions.length - 1; i >= 0; i--) {
       if (!this.actions[i].undone) {
