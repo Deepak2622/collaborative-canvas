@@ -6,7 +6,23 @@ const RoomManager = require('./rooms');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+const FRONTEND_URL = process.env.FRONTEND_URL || '';
+const allowedOrigins = [
+  FRONTEND_URL,
+  'https://collaborative-canvas-l6f7.onrender.com',
+  'http://localhost:3000'
+].filter(Boolean);
+
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
+  allowEIO3: true,
+  transports: ['websocket', 'polling']
+});
 
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
@@ -24,43 +40,33 @@ io.on('connection', (socket) => {
     color: room.users[id].color
   }));
 
-  socket.emit('init', { 
-    userId: socket.id, 
-    color: user.color, 
+  socket.emit('init', {
+    userId: socket.id,
+    color: user.color,
     history: room.state.getActions(),
     users: usersList
   });
-  
+
   io.to(queryRoom).emit('user_joined', { userId: socket.id, color: user.color });
   io.to(queryRoom).emit('users_update', { users: usersList });
 
   socket.on('draw_event', (payload) => {
     try {
-      if (!payload || typeof payload !== 'object') {
-        console.warn('Invalid draw_event payload from', socket.id);
-        return;
-      }
-      
+      if (!payload || typeof payload !== 'object') return;
+
       payload.userId = payload.userId || socket.id;
-      
+
       if (payload.type === 'stroke') {
-        if (!payload.points || !Array.isArray(payload.points) || payload.points.length === 0) {
-          console.warn('Invalid stroke data from', socket.id);
-          return;
-        }
-        
+        if (!payload.points || !Array.isArray(payload.points) || payload.points.length === 0) return;
+
         if (payload.points.length > 10000) {
-          console.warn('Stroke too large from', socket.id, '- truncated');
           payload.points = payload.points.slice(0, 10000);
         }
-        
+
         const action = room.state.addAction(payload);
         io.to(queryRoom).emit('draw_event', action);
       } else if (payload.type === 'path_segment') {
-        if (!payload.points || !Array.isArray(payload.points) || payload.points.length < 2) {
-          return;
-        }
-        
+        if (!payload.points || !Array.isArray(payload.points) || payload.points.length < 2) return;
         socket.to(queryRoom).emit('draw_event', payload);
       }
     } catch (error) {
@@ -69,15 +75,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('cursor', (payload) => {
-    socket.to(queryRoom).emit('cursor', { ...payload, userId: socket.id, color: room.users[socket.id]?.color });
+    try {
+      socket.to(queryRoom).emit('cursor', { ...payload, userId: socket.id, color: room.users[socket.id]?.color });
+    } catch (err) {
+      console.error('Error handling cursor:', err);
+    }
   });
 
   socket.on('undo', () => {
     try {
       const undone = room.state.undo();
-      if (undone) {
-        io.to(queryRoom).emit('action_undone', { opId: undone.opId });
-      }
+      if (undone) io.to(queryRoom).emit('action_undone', { opId: undone.opId });
     } catch (error) {
       console.error('Error handling undo:', error);
       socket.emit('error', { message: 'Failed to undo' });
@@ -87,9 +95,7 @@ io.on('connection', (socket) => {
   socket.on('redo', () => {
     try {
       const redone = room.state.redo();
-      if (redone) {
-        io.to(queryRoom).emit('action_redone', { opId: redone.opId, action: redone });
-      }
+      if (redone) io.to(queryRoom).emit('action_redone', { opId: redone.opId, action: redone });
     } catch (error) {
       console.error('Error handling redo:', error);
       socket.emit('error', { message: 'Failed to redo' });
@@ -97,26 +103,30 @@ io.on('connection', (socket) => {
   });
 
   socket.on('request_full_state', () => {
-    socket.emit('full_state', room.state.getActions());
+    try {
+      socket.emit('full_state', room.state.getActions());
+    } catch (err) {
+      console.error('Error sending full_state:', err);
+    }
   });
 
   socket.on('disconnect', (reason) => {
     try {
       room.removeUser(socket.id);
       io.to(queryRoom).emit('user_left', { userId: socket.id });
-      
+
       const usersList = Object.keys(room.users).map(id => ({
         userId: id,
         color: room.users[id].color
       }));
       io.to(queryRoom).emit('users_update', { users: usersList });
-      
+
       console.log(`User ${socket.id} disconnected from room ${queryRoom}. Reason: ${reason}`);
     } catch (error) {
       console.error('Error handling disconnect:', error);
     }
   });
-  
+
   socket.on('error', (error) => {
     console.error('Socket error:', error);
   });
