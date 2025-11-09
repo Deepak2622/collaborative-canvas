@@ -70,17 +70,6 @@ npm run dev
 3. Users in different rooms won't see each other's drawings
 4. Users in the same room will see each other's drawings
 
-### Testing Checklist
-
-- [ ] Draw simultaneously from multiple clients
-- [ ] Verify real-time path segments appear while drawing
-- [ ] Test undo/redo operations (should affect all users)
-- [ ] Check cursor positions update in real-time
-- [ ] Verify user list shows all online users
-- [ ] Test eraser tool
-- [ ] Change colors and stroke sizes
-- [ ] Test reconnection after network interruption
-
 ## Project Structure
 
 ```
@@ -175,7 +164,5 @@ collaborative-canvas/
 
 See `DEPLOYMENT.md` for Heroku deployment instructions.
 
-## License
 
-This project is provided as-is for educational purposes.
 
